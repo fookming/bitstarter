@@ -1,9 +1,12 @@
 var express = require('express');
-
+var fs = require('fs');
 var app = express.createServer(express.logger());
 
+var data = new Buffer();
+
 app.get('/', function(request, response) {
-  response.send('Hello World2!');
+   data = fs.readFileSync('index.html');
+   response.send(data.ToString("utf-8",0.data.length);
 });
 
 var port = process.env.PORT || 5000;
