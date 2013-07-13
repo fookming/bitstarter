@@ -22,13 +22,19 @@ References:
 */
 
 var fs = require('fs');
+var rest = require('restler');
 var program = require('commander');
 var cheerio = require('cheerio');
 var HTMLFILE_DEFAULT = "index.html";
 var CHECKSFILE_DEFAULT = "checks.json";
+// var CHECKURL_DEFAULT = "http://radiant-reaches-5718.herokuapp.com";
+var CHECKURLFILE_DEFAULT = "url.txt";
+var symbols;
 
 var assertFileExists = function(infile) {
     var instr = infile.toString();
+    if (symbols[2] == "-u") return instr;
+    // console.log(instr);
     if(!fs.existsSync(instr)) {
         console.log("%s does not exist. Exiting.", instr);
         process.exit(1); // http://nodejs.org/api/process.html#process_process_exit_code
@@ -46,6 +52,7 @@ var loadChecks = function(checksfile) {
 
 var checkHtmlFile = function(htmlfile, checksfile) {
     $ = cheerioHtmlFile(htmlfile);
+    // console.log(htmlfile);
     var checks = loadChecks(checksfile).sort();
     var out = {};
     for(var ii in checks) {
@@ -55,6 +62,22 @@ var checkHtmlFile = function(htmlfile, checksfile) {
     return out;
 };
 
+
+var checkUrlFile = function(urlfile, checksfile) {
+
+     // console.log(urlfile);
+	$ = cheerioHtmlFile(urlfile);
+	var checks = loadChecks(checksfile).sort();
+	var out = {}; 
+	for (var ii in checks) {
+	   var present = $(checks[ii]).length > 0;
+	   out[checks[ii]] = present;
+	}
+	console.log(out);
+	return out;
+};
+
+
 var clone = function(fn) {
     // Workaround for commander.js issue.
     // http://stackoverflow.com/a/6772648
@@ -62,13 +85,26 @@ var clone = function(fn) {
 };
 
 if(require.main == module) {
+    symbols = process.argv;
     program
         .option('-f, --file <html_file>', 'Path to index.html', clone(assertFileExists), HTMLFILE_DEFAULT)
         .option('-c, --checks <check_file>', 'Path to checks.json', clone(assertFileExists), CHECKSFILE_DEFAULT)
+  	.option('-u, --url <check_url>', 'Path to URL', clone(assertFileExists), CHECKURLFILE_DEFAULT)
         .parse(process.argv);
-    var checkJson = checkHtmlFile(program.file, program.checks);
+    // symbols = process.argv;
+  //   console.log(symbols[2]);
+  //   console.log("--->" + " " + program.file + " " + program.checks + " " + program.url);
+    if (symbols[2] == "-u") {
+	var fs1 = require('fs');
+	var outfile = "efm.txt";
+	rest.get(program.url).on('complete',function(data) {fs1.writeFileSync(outfile,data)});
+    	var checkJson = checkUrlFile(outfile, program.checks);
+    }
+    else {
+	var checkJson = checkHtmlFile(program.file, program.checks);
+    }
     var outJson = JSON.stringify(checkJson, null, 4);
-    console.log(outJson);
+//    console.log(outJson);
 } else {
     exports.checkHtmlFile = checkHtmlFile;
 }
